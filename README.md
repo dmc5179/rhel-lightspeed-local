@@ -1,6 +1,13 @@
 # rhel-lightspeed-local
 RHEL LightSpeed Local Agent Deployment
 
+- Download your OpenShift pull-secret from console.redhat.com
+- Setup authentication with container registry
+```console
+mkdir ~/.docker
+cp pull-secret ~/.docker/config.json
+```
+
 - Create config dir that doesn't always exist for new users
 ```console
 mkdir $HOME/.config
