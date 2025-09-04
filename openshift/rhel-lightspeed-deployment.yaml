@@ -5,22 +5,17 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  annotations:
-    volume.podman.io/driver: local
-  creationTimestamp: "2025-09-02T15:28:28Z"
   name: llamacpp-models
 spec:
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
-status: {}
+      storage: 10Gi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  creationTimestamp: "2025-09-02T15:28:28Z"
   labels:
     app: rhel-lightspeed
   name: rhel-lightspeed
@@ -36,12 +31,11 @@ spec:
     targetPort: 8888
   selector:
     app: rhel-lightspeed
-  type: NodePort
+#  type: NodePort
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  creationTimestamp: "2025-09-02T15:28:28Z"
   labels:
     app: rhel-lightspeed
   name: rhel-lightspeed-deployment
@@ -51,17 +45,18 @@ spec:
       app: rhel-lightspeed
   template:
     metadata:
-      annotations:
-        io.kubernetes.cri-o.SandboxID/llamacpp-model: 7b6e3789f97cd64df8c586fbc7a6e41b734420e39f75875debb9ea57e5aa0db4
-        io.kubernetes.cri-o.SandboxID/pgvector: 7b6e3789f97cd64df8c586fbc7a6e41b734420e39f75875debb9ea57e5aa0db4
-        io.kubernetes.cri-o.SandboxID/rlsapi: 7b6e3789f97cd64df8c586fbc7a6e41b734420e39f75875debb9ea57e5aa0db4
-      creationTimestamp: "2025-09-02T15:28:28Z"
       labels:
         app: rhel-lightspeed
       name: rhel-lightspeed
     spec:
+#      tolerations:
+#      - key: nvidia.com/gpu
+#        operator: Exists
+#        effect: NoSchedule
+#
       containers:
-      - env:
+      - name: pgvector
+        env:
         - name: POSTGRES_PASSWORD
           value: postgres
         - name: POSTGRES_HOST
@@ -73,17 +68,27 @@ spec:
         - name: POSTGRES_USER
           value: postgres
         image: quay.io/redhat-user-workloads/rhel-lightspeed-tenant/rag-database:latest
-        name: pgvector
         ports:
         - containerPort: 8000
+          name: porta
         - containerPort: 8888
+          name: portb
         securityContext:
-          seLinuxOptions:
-            type: spc_t
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+#        #securityContext:
+#          #seLinuxOptions:
+#            #type: spc_t
         volumeMounts:
         - mountPath: /dev/shm
           name: tmp-0
-      - command:
+      - name: llamacpp-model
+        command:
         - ramalama
         - --store
         - /models
@@ -100,16 +105,27 @@ spec:
         - name: HF_HOME
           value: /models/.cache/huggingface
         image: quay.io/ramalama/cuda:latest
-        name: llamacpp-model
+        resources:
+          limits:
+            nvidia.com/gpu: 1
         securityContext:
-          seLinuxOptions:
-            type: spc_t
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+        #securityContext:
+        #  seLinuxOptions:
+        #    type: spc_t
         volumeMounts:
         - mountPath: /dev/shm
           name: tmp-0
         - mountPath: /models
           name: llamacpp-models-pvc
-      - env:
+      - name: rlsapi
+        env:
         - name: HF_HOME
           value: /tmp/huggingface
         - name: EMBED_CHUNK_OVERLAP
@@ -139,10 +155,17 @@ spec:
         - name: LLM_PROVIDER
           value: openai
         image: quay.io/redhat-user-workloads/rhel-lightspeed-tenant/rlsapi/rlsapi:main
-        name: rlsapi
         securityContext:
-          seLinuxOptions:
-            type: spc_t
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+        #securityContext:
+        #  seLinuxOptions:
+        #    type: spc_t
       volumes:
       - name: llamacpp-models-pvc
         persistentVolumeClaim:
