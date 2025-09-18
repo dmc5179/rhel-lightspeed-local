@@ -2,16 +2,16 @@
 # it into Kubernetes.
 #
 # Created with podman-5.4.0
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: llamacpp-models
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
+#apiVersion: v1
+#kind: PersistentVolumeClaim
+#metadata:
+#  name: llamacpp-models
+#spec:
+#  accessModes:
+#  - ReadWriteOnce
+#  resources:
+#    requests:
+#      storage: 10Gi
 ---
 apiVersion: v1
 kind: Service
@@ -22,11 +22,11 @@ metadata:
 spec:
   ports:
   - name: "8000"
-    nodePort: 32611
+    #nodePort: 32611
     port: 8000
     targetPort: 8000
   - name: "8888"
-    nodePort: 30035
+    #nodePort: 30035
     port: 8888
     targetPort: 8888
   selector:
@@ -49,11 +49,10 @@ spec:
         app: rhel-lightspeed
       name: rhel-lightspeed
     spec:
-#      tolerations:
-#      - key: nvidia.com/gpu
-#        operator: Exists
-#        effect: NoSchedule
-#
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
       containers:
       - name: pgvector
         env:
@@ -67,26 +66,27 @@ spec:
           value: ragdb
         - name: POSTGRES_USER
           value: postgres
-        image: quay.io/redhat-user-workloads/rhel-lightspeed-tenant/rag-database:latest
+        #image: quay.io/redhat-user-workloads/rhel-lightspeed-tenant/rag-database:latest
+        image: registry.redhat.io/rhel-cla/rag-database-rhel10:latest
         ports:
         - containerPort: 8000
           name: porta
         - containerPort: 8888
           name: portb
-        securityContext:
-          seccompProfile:
-            type: RuntimeDefault
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
+#        securityContext:
+#          seccompProfile:
+#            type: RuntimeDefault
+#          runAsNonRoot: true
+#          allowPrivilegeEscalation: false
+#          capabilities:
+#            drop:
+#              - ALL
 #        #securityContext:
 #          #seLinuxOptions:
 #            #type: spc_t
-        volumeMounts:
-        - mountPath: /dev/shm
-          name: tmp-0
+#        volumeMounts:
+#        - mountPath: /dev/shm
+#          name: tmp-0
       - name: llamacpp-model
         command:
         - ramalama
@@ -104,26 +104,27 @@ spec:
           value: "0"
         - name: HF_HOME
           value: /models/.cache/huggingface
-        image: quay.io/ramalama/cuda:latest
+        #image: quay.io/ramalama/cuda:latest
+        image: quay.io/danclark/ramalama/cuda:latest
         resources:
           limits:
             nvidia.com/gpu: 1
-        securityContext:
-          seccompProfile:
-            type: RuntimeDefault
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
+#        securityContext:
+#          seccompProfile:
+#            type: RuntimeDefault
+#          runAsNonRoot: true
+#          allowPrivilegeEscalation: false
+#          capabilities:
+#            drop:
+#              - ALL
         #securityContext:
         #  seLinuxOptions:
         #    type: spc_t
         volumeMounts:
-        - mountPath: /dev/shm
-          name: tmp-0
-        - mountPath: /models
-          name: llamacpp-models-pvc
+        #- mountPath: /dev/shm
+        #  name: tmp-0
+        #- mountPath: /models
+        #  name: llamacpp-models-pvc
       - name: rlsapi
         env:
         - name: HF_HOME
@@ -154,22 +155,23 @@ spec:
           value: "50"
         - name: LLM_PROVIDER
           value: openai
-        image: quay.io/redhat-user-workloads/rhel-lightspeed-tenant/rlsapi/rlsapi:main
-        securityContext:
-          seccompProfile:
-            type: RuntimeDefault
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
+        #image: quay.io/redhat-user-workloads/rhel-lightspeed-tenant/rlsapi/rlsapi:main
+        image: registry.redhat.io/rhel-cla/rlsapi-rhel10:latest
+#        securityContext:
+#          seccompProfile:
+#            type: RuntimeDefault
+#          runAsNonRoot: true
+#          allowPrivilegeEscalation: false
+#          capabilities:
+#            drop:
+#              - ALL
         #securityContext:
         #  seLinuxOptions:
         #    type: spc_t
-      volumes:
-      - name: llamacpp-models-pvc
-        persistentVolumeClaim:
-          claimName: llamacpp-models
-      - emptyDir:
-          medium: Memory
-        name: tmp-0
+#      volumes:
+#      - name: llamacpp-models-pvc
+#        persistentVolumeClaim:
+#          claimName: llamacpp-models
+#      - emptyDir:
+#          medium: Memory
+#        name: tmp-0
