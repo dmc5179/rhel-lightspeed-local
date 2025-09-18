@@ -20,39 +20,45 @@ sudo setsebool -P container_use_devices true
 
 - Command to install
 ```console
-podman run -u : --rm -v $HOME/.config:/config:Z -v $HOME/.local/bin:/config/.local/bin:Z quay.io/redhat-user-workloads/rhel-lightspeed-tenant/installer:latest install
+podman run -u : --rm -v $HOME/.config:/config:Z -v $HOME/.local/bin:/config/.local/bin:Z registry.redhat.io/rhel-cla/installer-rhel10:latest install-systemd
 ```
 
 ```console
 ⚠️  Red Hat Enterprise Linux (RHEL) command line assistant is a tool that uses AI technology. Do not include any personal information or other sensitive information in your input. Results should not be relied on without human review. More information available: https://red.ht/3JqbWuu.
 
-ℹ️  🚀 Installing rhel-lightspeed command...
-✅ 🎉 RHEL Lightspeed installed!
+ℹ️  Installing RHEL CLA systemd service...
+✅ 🎉 RHEL RHEL CLA installed!
 
 ℹ️  📁 Files installed:
-   • Command: ~/.local/bin/rhel-lightspeed
-   • Config: ~/.config/rhel-lightspeed/.env
-   • Runner: ~/.config/rhel-lightspeed/rhel-lightspeed-runner.sh
+   • Command: ~/.local/bin/rhel-cla
+   • Config: ~/.config/rhel-cla/.env
+   • Runner: ~/.config/rhel-cla/rhel-cla-runner.sh
+   • Systemd service: ~/.config/systemd/user/rhel-cla.service
 
-⚠️  ⚠️  NVIDIA GPU users (Linux): Edit ~/.config/rhel-lightspeed/.env and uncomment:
-   LLAMACPP_IMAGE="quay.io/ramalama/cuda:latest"
-
-⚠️  ⚠️  If running MacOS or Windows, make the command executable:
-   chmod +x ~/.local/bin/rhel-lightspeed
-
-⚠️  ⚠️  Make sure ~/.local/bin is in your PATH
-   # For bash: echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
-   # For zsh:  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
-   # For fish: fish_add_path ~/.local/bin
+⚠️  ⚠️  Make sure ~/.local/bin is in your PATH:
+   • For bash users:
+ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc'
+   • For zsh users (macOS default):
+ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc'
+   • For fish users:
+ fish_add_path ~/.local/bin
 
 ℹ️  🚀 Quick start:
-   rhel-lightspeed start
-   rhel-lightspeed status
-   rhel-lightspeed stop
+   rhel-cla start    # Start RHEL CLA
+   rhel-cla status   # Check status
+   rhel-cla stop     # Stop RHEL CLA
 
-ℹ️  🗑️   Uninstall RHEL Lightspeed:
-   rhel-lightspeed uninstall
+ℹ️  📊 View logs:
+   journalctl --user -u rhel-cla -f     # Follow logs
+
+ℹ️  🗑️   Uninstall RHEL CLA:
+   rhel-cla uninstall
 ```
+
+
+
+
+
 
 # Configuring GPU
 
@@ -75,7 +81,13 @@ sudo dnf -y install command-line-assistant
 sudo vim /etc/xdg/command-line-assistant/config.toml
 ```
 
+- If using an OpenShift Route
+enpoint = "http://ocp-route:80"  # Router exposes 80 which forwards to service 8000
+
+- Direct RHEL endpoint
 endpoint = "http://10.0.35.196:8000/" # This is the RHEL GPU server running the lightspeed pod
+
+- Disable SSL if needed
 verify_ssl = false # Since we are not using SSL in this case. Maybe could add in a cert on the rhel-lightspeed side? Unsure
 
 - Restart clad
@@ -90,7 +102,6 @@ c "what is an immutable file?"
 
 # OpenShift Deployment
 
-- I have not tested this at all. Template files are under the openshift directory of this repository. Might work
 
 # Potential Bugs?
 
@@ -99,3 +110,10 @@ c "what is an immutable file?"
 - rhel-lightspeed start will return but rhel-lightspeed status will show that the API is not available for 10-15 seconds. Maybe the start script should wait until the API is available?
 
 - rhel-lightspeed stop command doesn't cleanup the containers or pods, especially if there is a failed start command
+
+
+
+
+podman run -u : --rm -v $HOME/.config:/config:Z -v $HOME/.local/bin:/config/.local/bin:Z registry.redhat.io/rhel-cla/installer-rhel10:latest install-systemd
+Error: lsetxattr(label=system_u:object_r:container_file_t:s0:c448,c649) /home/danclark/.config/google-chrome/NativeMessagingHosts/com.citrix.workspace.native.json: operation not permitted
+
