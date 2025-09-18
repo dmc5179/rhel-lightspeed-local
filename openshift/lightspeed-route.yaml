@@ -1,0 +1,14 @@
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: lightspeed
+spec:
+  path: /
+  port:
+    targetPort: "8000"
+  to:
+    kind: Service
+    name: rhel-lightspeed
+    weight: 100
+  wildcardPolicy: None
