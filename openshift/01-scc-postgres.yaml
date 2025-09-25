@@ -1,0 +1,39 @@
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: scc-postgres
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: false
+allowPrivilegedContainer: false
+#allowedCapabilities:
+#- '*'
+#allowedUnsafeSysctls:
+#- '*'
+defaultAddCapabilities: null
+fsGroup:
+  type: MustRunAs
+  ranges:
+  - max: 26
+    min: 26
+runAsUser:
+  type: MustRunAs
+  uid: 26
+readOnlyRootFilesystem: false
+requiredDropCapabilities: null
+seLinuxContext:
+  type: RunAsAny
+#seccompProfiles:
+#- '*'
+seccompProfiles:
+- "runtime/default"
+supplementalGroups:
+  type: RunAsAny
+#supplementalGroups:
+#  type: MustRunAs
+#  gid: 26
+volumes:
+- '*'

@@ -1,13 +1,14 @@
-#apiVersion: v1
-#kind: PersistentVolumeClaim
-#metadata:
-#  name: llamacpp-models
-#spec:
-#  accessModes:
-#  - ReadWriteOnce
-#  resources:
-#    requests:
-#      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llamacpp-models
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
 ---
 apiVersion: v1
 kind: Service
@@ -18,16 +19,13 @@ metadata:
 spec:
   ports:
   - name: "8000"
-    #nodePort: 32611
     port: 8000
     targetPort: 8000
   - name: "8888"
-    #nodePort: 30035
     port: 8888
     targetPort: 8888
   selector:
     app: rhel-lightspeed
-#  type: NodePort
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -49,6 +47,16 @@ spec:
       - key: nvidia.com/gpu
         operator: Exists
         effect: NoSchedule
+      initContainers:
+        - name: copy-model-files-init
+          image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+          command: ['sh', '-c', 'cp -r /tmp/initial-data/* /mnt/pvc/']
+          volumeMounts:
+            - name: llamacpp-models
+              mountPath: /mnt/pvc
+      # TODO: Test SCC and service account feature
+      #serviceAccount: postgres-sa # TODO: Rename this since it covers all the containers here
+      #automountServiceAccountToken: false
       containers:
       - name: pgvector
         env:
@@ -62,13 +70,17 @@ spec:
           value: ragdb
         - name: POSTGRES_USER
           value: postgres
-        #image: quay.io/redhat-user-workloads/rhel-lightspeed-tenant/rag-database:latest
         image: registry.redhat.io/rhel-cla/rag-database-rhel10:latest
         ports:
         - containerPort: 8000
           name: porta
         - containerPort: 8888
           name: portb
+# TODO: Make and SCC for the postgres container
+# bash-5.2$ whoami
+# postgres
+# bash-5.2$ id
+# uid=26(postgres) gid=26(postgres) groups=26(postgres)
 #        securityContext:
 #          seccompProfile:
 #            type: RuntimeDefault
@@ -100,7 +112,7 @@ spec:
           value: "0"
         - name: HF_HOME
           value: /models/.cache/huggingface
-        #image: quay.io/ramalama/cuda:latest
+        #image: quay.io/ramalama/cuda:latest # TODO: Had to side load the model from installer container and make my own image
         image: quay.io/danclark/ramalama/cuda:latest
         resources:
           limits:
@@ -151,7 +163,6 @@ spec:
           value: "50"
         - name: LLM_PROVIDER
           value: openai
-        #image: quay.io/redhat-user-workloads/rhel-lightspeed-tenant/rlsapi/rlsapi:main
         image: registry.redhat.io/rhel-cla/rlsapi-rhel10:latest
 #        securityContext:
 #          seccompProfile:
@@ -164,10 +175,10 @@ spec:
         #securityContext:
         #  seLinuxOptions:
         #    type: spc_t
-#      volumes:
-#      - name: llamacpp-models-pvc
-#        persistentVolumeClaim:
-#          claimName: llamacpp-models
+      volumes:
+      - name: llamacpp-models-pvc
+        persistentVolumeClaim:
+          claimName: llamacpp-models
 #      - emptyDir:
 #          medium: Memory
 #        name: tmp-0
