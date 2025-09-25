@@ -3,6 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: llamacpp-models
+  namespace: rhel-lightspeed
 spec:
   accessModes:
   - ReadWriteOnce
@@ -16,6 +17,7 @@ metadata:
   labels:
     app: rhel-lightspeed
   name: rhel-lightspeed
+  namespace: rhel-lightspeed
 spec:
   ports:
   - name: "8000"
@@ -33,6 +35,7 @@ metadata:
   labels:
     app: rhel-lightspeed
   name: rhel-lightspeed-deployment
+  namespace: rhel-lightspeed
 spec:
   selector:
     matchLabels:
@@ -49,10 +52,14 @@ spec:
         effect: NoSchedule
       initContainers:
         - name: copy-model-files-init
-          image: registry.access.redhat.com/ubi9/ubi-minimal:latest
-          command: ['sh', '-c', 'cp -r /tmp/initial-data/* /mnt/pvc/']
+          image: registry.redhat.io/rhel-cla/installer-rhel10:latest
+          command: ['sh', '-c', 'cp /installer/models/Phi-4-mini-instruct-Q4_K_M.gguf /mnt/pvc/']
+          #command: ['sh', '-c', 'sleep 600']
+          securityContext:
+            #fsGroup: 999
+            runAsUser: 0
           volumeMounts:
-            - name: llamacpp-models
+            - name: llamacpp-models-pvc
               mountPath: /mnt/pvc
       # TODO: Test SCC and service account feature
       #serviceAccount: postgres-sa # TODO: Rename this since it covers all the containers here
@@ -112,8 +119,8 @@ spec:
           value: "0"
         - name: HF_HOME
           value: /models/.cache/huggingface
-        #image: quay.io/ramalama/cuda:latest # TODO: Had to side load the model from installer container and make my own image
-        image: quay.io/danclark/ramalama/cuda:latest
+        image: quay.io/ramalama/cuda:latest # TODO: Had to side load the model from installer container and make my own image
+        #image: quay.io/danclark/ramalama/cuda:latest
         resources:
           limits:
             nvidia.com/gpu: 1
@@ -131,8 +138,8 @@ spec:
         volumeMounts:
         #- mountPath: /dev/shm
         #  name: tmp-0
-        #- mountPath: /models
-        #  name: llamacpp-models-pvc
+        - mountPath: /models
+          name: llamacpp-models-pvc
       - name: rlsapi
         env:
         - name: HF_HOME
