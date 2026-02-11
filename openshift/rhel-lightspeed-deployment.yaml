@@ -65,7 +65,7 @@ spec:
       #serviceAccount: postgres-sa # TODO: Rename this since it covers all the containers here
       #automountServiceAccountToken: false
       containers:
-      - name: pgvector
+      - name: pgvector # TODO: Should this postgres database have a persistent volume????
         env:
         - name: POSTGRES_PASSWORD
           value: postgres
@@ -83,6 +83,16 @@ spec:
           name: porta
         - containerPort: 8888
           name: portb
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          seccompProfile:
+            type: "RuntimeDefault"
+          capabilities:
+            drop:
+              - ALL
+          runAsUser: 26
+          runAsGroup: 26
 # TODO: Make and SCC for the postgres container
 # bash-5.2$ whoami
 # postgres
