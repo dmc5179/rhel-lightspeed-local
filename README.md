@@ -1,6 +1,9 @@
 # rhel-lightspeed-local
 RHEL LightSpeed Local Agent Deployment
 
+## Mirroring
+
+
 - Download your OpenShift pull-secret from console.redhat.com
 - Setup authentication with container registry
 ```console
@@ -116,4 +119,34 @@ c "what is an immutable file?"
 
 podman run -u : --rm -v $HOME/.config:/config:Z -v $HOME/.local/bin:/config/.local/bin:Z registry.redhat.io/rhel-cla/installer-rhel10:latest install-systemd
 Error: lsetxattr(label=system_u:object_r:container_file_t:s0:c448,c649) /home/danclark/.config/google-chrome/NativeMessagingHosts/com.citrix.workspace.native.json: operation not permitted
+
+
+
+
+
+# RHEL Lightspeed offline deployment
+
+https://www.redhat.com/en/blog/use-rhel-command-line-assistant-offline-new-developer-preview
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/interacting_with_the_command-line_assistant_powered_by_rhel_lightspeed/containerized-command-line-assistant-for-disconnected-environments
+
+## RPM packages
+
+command-line-assistant command-line-assistant-selinux python3-dasbus python3-greenlet python3-sqlalchemy python3-tomli
+
+## Container Images
+
+```console
+podman pull registry.redhat.io/rhel-cla/installer-rhel10:latest
+podman pull registry.redhat.io/rhel-cla/rag-database-rhel10:latest
+podman pull quay.io/ramalama/ramalama:0.16.0
+podman pull registry.redhat.io/rhel-cla/rlsapi-rhel10:latest
+podman pull quay.io/redhat-user-workloads/rhel-lightspeed-tenant/okp-mcp
+```
+
+
+
+## MCP mode
+
+https://github.com/rhel-lightspeed/okp-mcp/blob/main/README.md
 
