@@ -1,0 +1,102 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: rhel-lightspeed
+  name: rhel-lightspeed
+  namespace: rhel-lightspeed
+spec:
+  ports:
+  - name: "8000"
+    port: 8000
+    targetPort: 8000
+  selector:
+    app: rhel-lightspeed
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: rhel-lightspeed
+  name: rhel-lightspeed-deployment
+  namespace: rhel-lightspeed
+spec:
+  selector:
+    matchLabels:
+      app: rhel-lightspeed
+  template:
+    metadata:
+      labels:
+        app: rhel-lightspeed
+      name: rhel-lightspeed
+    spec:
+      containers:
+      - name: pgvector
+        env:
+        - name: POSTGRES_PASSWORD
+          value: postgres
+        - name: POSTGRES_HOST
+          value: 127.0.0.1
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: PGVECTOR_DBNAME
+          value: ragdb
+        - name: POSTGRES_USER
+          value: postgres
+        image: registry.redhat.io/rhel-cla/rag-database-rhel10:latest
+        ports:
+        - containerPort: 8000
+          name: porta
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          seccompProfile:
+            type: "RuntimeDefault"
+          capabilities:
+            drop:
+              - ALL
+          runAsUser: 26
+          runAsGroup: 26
+      - name: rlsapi
+        env:
+        - name: REQUEST_TIMEOUT_ERROR
+          value: "120"
+        - name: WORKFLOW_TIMEOUT_SECONDS
+          value: "120"
+        - name: ENABLE_AUTH
+          value: "false"
+	# OpenAI-compatible LLM Endpoint settings
+        - name: LLM_PROVIDER
+          value: openai
+  	- name: LLM_TIMEOUT_SECONDS
+          value: "120"
+        - name: OPENAI_MODEL
+          value: <YOUR_MODEL_NAME>  # e.g. openai/gpt-oss-20b, granite-3b, etc.
+        - name: OPENAI_API_BASE
+          value: <YOUR_LLM_ENDPOINT_URL>  # e.g. https://rhoai-inference.example.com/v1
+        - name: OPENAI_API_KEY
+          value: <YOUR_API_TOKEN>  # API token for the LLM endpoint
+        # Required when the LLM endpoint uses internal/self-signed TLS certificates
+        - name: SSL_CERT_FILE
+          value: /path/to/extracted/pem/tls-ca-bundle.pem
+        - name: REQUESTS_CA_BUNDLE
+          value: /path/to/extracted/ca/pem/tls-ca-bundle.pem
+        # Embedding model settings for local RAG
+        - name: EMBED_MODEL
+          value: ibm-granite/granite-embedding-30m-english
+        - name: EMBED_DIMENSION
+          value: "384"
+	- name: HF_HOME
+          value: /tmp/huggingface
+        - name: EMBED_CHUNK_OVERLAP
+          value: "15"
+        - name: EMBED_BATCH_SIZE
+          value: "50"
+        - name: DB_PASSWORD
+          # Must be the same as pgvector's POSTGRES_USER value
+          value: postgres
+        - name: EMBED_CHUNK_SIZE
+          value: "275"
+        image: registry.redhat.io/rhel-cla/rlsapi-rhel10:latest
+
